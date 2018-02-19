@@ -12,10 +12,15 @@
 const double particleRadius = 0.005, particleColor = 0;
 const int windowWidth = 800;
 const double gravConst = 100;
+double theta_max;
+int n_part_thread;
+//const node_t * root;
 
 
 typedef struct args {
-    int arg1;
+  particle_t * particle;
+  double force[2];
+  int arg1;
 } args_t;
 
 void* the_thread_func(void* arg) {
@@ -49,7 +54,7 @@ int main (int argc, char *argv[]) {
   printf("nsteps: \t\t%d\n", nsteps);
   const double delta_t = atof(argv[4]);        // Timestep
   printf("delta_t: \t\t%.5f\n", delta_t);
-  const double theta_max = atof(argv[5]);        // Theta max
+  theta_max = atof(argv[5]);        // Theta max
   printf("theta_max: \t\t%.1f\n", theta_max);
   const int graphics = atoi(argv[6]);         // 1 or 0 meaning graphics on/off
   printf("graphics: \t\t%d\n", graphics);
