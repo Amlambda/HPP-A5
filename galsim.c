@@ -24,11 +24,28 @@ typedef struct args {
   int index;
 } args_t;
 
-void* the_thread_func(void* arg) {
-  args_t * argPtr;
-  argPtr = (args_t *)arg;
-  printf("Running thread function %d for %d particles\n",argPtr->index, n_thread_part );
-  return NULL;
+
+// Function used to parallelise force and acceleration computation
+void * the_thread_func(void* arg) {
+  args_t * argPtr = (args_t *)arg;        // Cast input to args struct
+  particle_t * target = argPtr->particle; // Set target particle
+  node_t * root = argPtr->root;           // Set root node
+  double * xAcc = argPtr->xAcc;
+  double * yAcc = argPtr->yAcc;
+
+  double forceSumX, forceSumY;
+
+  for (int i = 0; i < n_thread_part; i++) { // Calculate forcesum for specified number of particles
+      forceSumX = calc_forcesum(target, root, theta_max, 'x');
+      forceSumY = calc_forcesum(target, root, theta_max, 'y');
+
+      xAcc = -(gravConst/N)*forceSumX;
+      yAcc = -(gravConst/N)*forceSumY;
+
+      target++;
+      xAcc++;
+      yAcc++;
+  }
 }
 
 static double get_wall_seconds() {
@@ -149,13 +166,20 @@ int main (int argc, char *argv[]) {
     /* Initialize mother node */
     node_t * root = new_node(0, 0, 1);
 
+    double startInsert = get_wall_seconds();
     // Build quadtree with all particles for current time step
     for(int i=0;i<N;i++){
       insert(root, &particles[i]);
     }
+    double endInsert = get_wall_seconds();
+    printf("Insert takes %f wall seconds\n", endInsert - startInsert);
 
+    double startCalcCm = get_wall_seconds();
     // Calculate mass center for all nodes 
     calc_cm(root);
+    double endCalcCm = get_wall_seconds();
+    printf("Calculation of center fo mass takes %f wall seconds\n", endCalcCm - startCalcCm);
+
 
       /* Start thread. */
     for(int i = 0; i<(n_threads-1);i++){
@@ -166,6 +190,9 @@ int main (int argc, char *argv[]) {
       thread_args[i].yAcc = &yAcc[i*n_thread_part];
       pthread_create(&thread[i], NULL, the_thread_func, &thread_args[i]);
     }
+
+
+    double startCalcAcc = get_wall_seconds();
 
     /* Compute acceleration of particle i based on force from all other particles */
     for (int i = (n_threads*n_thread_part); i < N; i++) {
@@ -178,10 +205,16 @@ int main (int argc, char *argv[]) {
       yAcc[i] = -(gravConst/N)*forceSumY;
     }
 
+
     for(int i = 0; i<(n_threads-1);i++){
       pthread_join(thread[i], NULL);
     }
+
+    double endCalcAcc = get_wall_seconds();
+    printf("Calculation of acceleration in 2D takes %f wall seconds\n", endCalcAcc - startCalcAcc);
+
     
+    double startUpdatePos = get_wall_seconds();
     // /* Update position of particle i with respect to all other particles */
     for (int i = 0; i < N; i++) {
       target = &particles[i];
@@ -195,6 +228,8 @@ int main (int argc, char *argv[]) {
       // target->xPos = get_pos_1D(target->xPos, target->xVel, delta_t);   
       // target->yPos = get_pos_1D(target->yPos, target->yVel, delta_t);
     }
+    double endUpdatePos = get_wall_seconds();
+    printf("Updating positions in 2D takes %f wall seconds\n", endUpdatePos - startUpdatePos);
 
     if (graphics == 1) {
       /* Call graphics routines. */
