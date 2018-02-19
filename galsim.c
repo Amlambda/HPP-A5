@@ -7,11 +7,12 @@
 #include <string.h>
 #include <assert.h>
 #include <pthread.h>
-
+#include <sys/time.h>
 
 const double particleRadius = 0.005, particleColor = 0;
 const int windowWidth = 800;
 const double gravConst = 100;
+
 
 typedef struct args {
     int arg1;
@@ -21,7 +22,15 @@ void* the_thread_func(void* arg) {
   printf("Running thread function\n" );
 }
 
+static double get_wall_seconds() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    double seconds = tv.tv_sec + (double)tv.tv_usec / 1000000;
+    return seconds;
+}
+
 int main (int argc, char *argv[]) {
+  double startTime = get_wall_seconds();
   const double L=1, W=1;    // Dimensions of domain in which particles move
 
   // Check command line arguments
@@ -241,5 +250,7 @@ int main (int argc, char *argv[]) {
   printf("Result saved in file '%s'\n", output_file_name);
 
   free(buffer);
+  double endTime = get_wall_seconds();
+  printf("Program run took %f wall seconds\n", endTime - startTime);
   return 0;
 }
