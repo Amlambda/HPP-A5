@@ -25,8 +25,9 @@ double get_theta(particle_t * target, node_t * node) {
 }
 
 
-
 // Calculates the sum in the force equation
+
+//Calculates the sum in the force equation
 double calc_forcesum(particle_t * target, node_t *node, double theta_max, char coord) {
   if(isempty(node) || (isleaf(node) && have_same_pos(node,target))) {
     return 0;
@@ -58,39 +59,6 @@ double calc_forcesum(particle_t * target, node_t *node, double theta_max, char c
 
     return forceSum;
 }
-
-// Calculates the sum in the force equation
-// void * calc_forcesum(particle_t * target, node_t *node, double theta_max, char coord) {
-//   if(isempty(node) || (isleaf(node) && have_same_pos(node,target))) {
-//     return 0;
-//   } else if (ispointer(node)) {
-//     double theta = get_theta(target, node);
-
-//     if (theta > theta_max) {
-//       return (calc_forcesum(target, node->tl, theta_max, coord) +
-//         calc_forcesum(target, node->tr, theta_max, coord) +
-//         calc_forcesum(target, node->bl, theta_max, coord) +
-//         calc_forcesum(target, node->br, theta_max, coord));
-//     }
-//   }
-
-//     // Get center of mass of node and treat it like a particle
-//     cm_t * other = node->nodeCm;  
-
-//     double absDist = sqrt(((target->xPos)-(other->xPos))*((target->xPos)-(other->xPos)) 
-//       + ((target->yPos)-(other->yPos))*((target->yPos)-(other->yPos)));
-
-//     double partDist, forceSum;
-
-//     if (coord == 'x') {
-//       partDist = (target->xPos) - (other->xPos);
-//     } else {
-//       partDist = (target->yPos) - (other->yPos);
-//     }
-//     forceSum = ((other->mass)*partDist)/((absDist + eps0)*(absDist + eps0)*(absDist + eps0));
-
-//     //return forceSum;
-// }
 
 
 

@@ -19,12 +19,35 @@ int n_part_thread;
 
 typedef struct args {
   particle_t * particle;
-  double force[2];
-  int arg1;
+  node_t * root;
+  double * xAcc;
+  double * yAcc;
+  int index;
 } args_t;
 
-void* the_thread_func(void* arg) {
-  printf("Running thread function\n" );
+
+// Function used to parallelise force and acceleration computation
+void * the_thread_func(void* arg) {
+  args_t * argPtr = (args_t *)arg;        // Cast input to args struct
+  particle_t * target = argPtr->particle; // Set target particle
+  node_t * root = argPtr->root;           // Set root node
+  double * xAcc = argPtr->xAcc;
+  double * yAcc = argPtr->yAcc;
+
+  double forceSumX, forceSumY;
+
+  for (int i = 0; i < n_thread_part; i++) { // Calculate forcesum for specified number of particles
+      forceSumX = calc_forcesum(target, root, theta_max, 'x');
+      forceSumY = calc_forcesum(target, root, theta_max, 'y');
+
+      xAcc = -(gravConst/N)*forceSumX;
+      yAcc = -(gravConst/N)*forceSumY;
+
+      target++;
+      xAcc++;
+      yAcc++;
+  }
+
 }
 
 static double get_wall_seconds() {
@@ -69,9 +92,6 @@ int main (int argc, char *argv[]) {
     thread_args[i].arg1 = i;
     pthread_create(&thread[i], NULL, the_thread_func, &thread_args[i]);
   }
-
-
-
 
   //COPIED CODE TO READ FILE
   /* Open input file and determine its size. */
