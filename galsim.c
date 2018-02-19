@@ -6,11 +6,20 @@
 #include <math.h>
 #include <string.h>
 #include <assert.h>
+#include <pthread.h>
 
 
 const double particleRadius = 0.005, particleColor = 0;
 const int windowWidth = 800;
 const double gravConst = 100;
+
+typedef struct args {
+    int arg1;
+} args_t;
+
+void* the_thread_func(void* arg) {
+  printf("Running thread function\n" );
+}
 
 int main (int argc, char *argv[]) {
   const double L=1, W=1;    // Dimensions of domain in which particles move
@@ -36,6 +45,19 @@ int main (int argc, char *argv[]) {
   const int graphics = atoi(argv[6]);         // 1 or 0 meaning graphics on/off
   printf("graphics: \t\t%d\n", graphics);
   printf("------------------------------------\n\n");
+
+  int n_threads = 1;
+  args_t thread_args[n_threads];
+
+  /* Start thread. */
+  pthread_t thread[n_threads];
+  for(int i = 0; i<n_threads;i++){
+    thread_args[i].arg1 = i;
+    pthread_create(&thread[i], NULL, the_thread_func, &thread_args[i]);
+  }
+
+
+
 
   //COPIED CODE TO READ FILE
   /* Open input file and determine its size. */
