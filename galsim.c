@@ -13,18 +13,22 @@ const double particleRadius = 0.005, particleColor = 0;
 const int windowWidth = 800;
 const double gravConst = 100;
 double theta_max;
-int n_part_thread;
-//const node_t * root;
-
+int n_thread_part;
+int n_threads;
 
 typedef struct args {
   particle_t * particle;
-  double force[2];
-  int arg1;
+  node_t * root;
+  double * xAcc;
+  double * yAcc;
+  int index;
 } args_t;
 
 void* the_thread_func(void* arg) {
-  printf("Running thread function\n" );
+  args_t * argPtr;
+  argPtr = (args_t *)arg;
+  printf("Running thread function %d for %d particles\n",argPtr->index, n_thread_part );
+  return NULL;
 }
 
 static double get_wall_seconds() {
@@ -39,8 +43,8 @@ int main (int argc, char *argv[]) {
   const double L=1, W=1;    // Dimensions of domain in which particles move
 
   // Check command line arguments
-  if(argc != 7) {   // End program if not 5 input arguments (argv[0] is the program name)
-        printf("Error: Expected number of input arguments is 6\n");
+  if(argc != 8) {   // End program if not 5 input arguments (argv[0] is the program name)
+        printf("Error: Expected number of input arguments is 7\n");
         exit(1);
   }
   
@@ -58,19 +62,9 @@ int main (int argc, char *argv[]) {
   printf("theta_max: \t\t%.1f\n", theta_max);
   const int graphics = atoi(argv[6]);         // 1 or 0 meaning graphics on/off
   printf("graphics: \t\t%d\n", graphics);
+  n_threads = atoi(argv[7]);         // Number of threads
+  printf("number of threads: \t\t%d\n", n_threads);
   printf("------------------------------------\n\n");
-
-  int n_threads = 1;
-  args_t thread_args[n_threads];
-
-  /* Start thread. */
-  pthread_t thread[n_threads];
-  for(int i = 0; i<n_threads;i++){
-    thread_args[i].arg1 = i;
-    pthread_create(&thread[i], NULL, the_thread_func, &thread_args[i]);
-  }
-
-
 
 
   //COPIED CODE TO READ FILE
@@ -129,6 +123,9 @@ int main (int argc, char *argv[]) {
     index++;
   }
 
+
+
+
   /* If graphics are to be used, prepare graphics window */
   if (graphics == 1) {
     InitializeGraphics(argv[0],windowWidth,windowWidth);
@@ -140,6 +137,11 @@ int main (int argc, char *argv[]) {
   double absDist, partDistX, partDistY;
   double xAcc[N]; 
   double yAcc[N];
+
+  /* Initiate threads */
+  args_t thread_args[n_threads];
+  n_thread_part = (int)(N/n_threads);
+  pthread_t thread[n_threads];
 
 
   /* Start simulation */
@@ -155,8 +157,18 @@ int main (int argc, char *argv[]) {
     // Calculate mass center for all nodes 
     calc_cm(root);
 
+      /* Start thread. */
+    for(int i = 0; i<(n_threads-1);i++){
+      thread_args[i].particle = &particles[i*n_thread_part];
+      thread_args[i].root = root;
+      thread_args[i].index = i;
+      thread_args[i].xAcc = &xAcc[i*n_thread_part];
+      thread_args[i].yAcc = &yAcc[i*n_thread_part];
+      pthread_create(&thread[i], NULL, the_thread_func, &thread_args[i]);
+    }
+
     /* Compute acceleration of particle i based on force from all other particles */
-    for (int i = 0; i < N; i++) {
+    for (int i = (n_threads*n_thread_part); i < N; i++) {
       target = &particles[i];
 
       double forceSumX = calc_forcesum(target, root, theta_max, 'x');
@@ -164,6 +176,10 @@ int main (int argc, char *argv[]) {
 
       xAcc[i] = -(gravConst/N)*forceSumX;
       yAcc[i] = -(gravConst/N)*forceSumY;
+    }
+
+    for(int i = 0; i<(n_threads-1);i++){
+      pthread_join(thread[i], NULL);
     }
     
     // /* Update position of particle i with respect to all other particles */
