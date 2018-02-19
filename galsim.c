@@ -142,14 +142,21 @@ int main (int argc, char *argv[]) {
     /* Initialize mother node */
     node_t * root = new_node(0, 0, 1);
 
+    double startInsert = get_wall_seconds();
     // Build quadtree with all particles for current time step
     for(int i=0;i<N;i++){
       insert(root, &particles[i]);
     }
+    double endInsert = get_wall_seconds();
+    printf("Insert takes %f wall seconds\n", endInsert - startInsert);
 
+    double startCalcCm = get_wall_seconds();
     // Calculate mass center for all nodes 
     calc_cm(root);
+    double endCalcCm = get_wall_seconds();
+    printf("Calculation of center fo mass takes %f wall seconds\n", endCalcCm - startCalcCm);
 
+    double startCalcAcc = get_wall_seconds();
     /* Compute acceleration of particle i based on force from all other particles */
     for (int i = 0; i < N; i++) {
       target = &particles[i];
@@ -160,7 +167,10 @@ int main (int argc, char *argv[]) {
       xAcc[i] = -(gravConst/N)*forceSumX;
       yAcc[i] = -(gravConst/N)*forceSumY;
     }
+    double endCalcAcc = get_wall_seconds();
+    printf("Calculation of acceleration in 2D takes %f wall seconds\n", endCalcAcc - startCalcAcc);
     
+    double startUpdatePos = get_wall_seconds();
     // /* Update position of particle i with respect to all other particles */
     for (int i = 0; i < N; i++) {
       target = &particles[i];
@@ -174,6 +184,8 @@ int main (int argc, char *argv[]) {
       // target->xPos = get_pos_1D(target->xPos, target->xVel, delta_t);   
       // target->yPos = get_pos_1D(target->yPos, target->yVel, delta_t);
     }
+    double endUpdatePos = get_wall_seconds();
+    printf("Updating positions in 2D takes %f wall seconds\n", endUpdatePos - startUpdatePos);
 
     if (graphics == 1) {
       /* Call graphics routines. */
