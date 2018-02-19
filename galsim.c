@@ -15,6 +15,7 @@ const double gravConst = 100;
 double theta_max;
 int n_thread_part;
 int n_threads;
+int N;
 
 typedef struct args {
   particle_t * particle;
@@ -39,13 +40,14 @@ void * the_thread_func(void* arg) {
       forceSumX = calc_forcesum(target, root, theta_max, 'x');
       forceSumY = calc_forcesum(target, root, theta_max, 'y');
 
-      xAcc = -(gravConst/N)*forceSumX;
-      yAcc = -(gravConst/N)*forceSumY;
+      *xAcc = -(gravConst/N)*forceSumX;
+      *yAcc = -(gravConst/N)*forceSumY;
 
       target++;
       xAcc++;
       yAcc++;
   }
+  return NULL;
 }
 
 static double get_wall_seconds() {
@@ -67,7 +69,7 @@ int main (int argc, char *argv[]) {
   
   // Read input arguments
   printf("-------- Input Arguments -----------\n");
-  const int N = atoi(argv[1]);                // Number of particles to simulate (atoi = ascii to int)
+  N = atoi(argv[1]);                // Number of particles to simulate (atoi = ascii to int)
   printf("N: \t\t\t%d\n", N);
   const char* input_file_name = argv[2];      // Filename of file to read the initial configuration from
   printf("input_file_name: \t%s\n", input_file_name);
@@ -158,6 +160,7 @@ int main (int argc, char *argv[]) {
   /* Initiate threads */
   args_t thread_args[n_threads];
   n_thread_part = (int)(N/n_threads);
+  //printf("particles per thread: %d\n",n_thread_part);
   pthread_t thread[n_threads];
 
 
@@ -172,13 +175,13 @@ int main (int argc, char *argv[]) {
       insert(root, &particles[i]);
     }
     double endInsert = get_wall_seconds();
-    printf("Insert takes %f wall seconds\n", endInsert - startInsert);
+    //printf("Insert takes %f wall seconds\n", endInsert - startInsert);
 
     double startCalcCm = get_wall_seconds();
     // Calculate mass center for all nodes 
     calc_cm(root);
     double endCalcCm = get_wall_seconds();
-    printf("Calculation of center fo mass takes %f wall seconds\n", endCalcCm - startCalcCm);
+    //printf("Calculation of center fo mass takes %f wall seconds\n", endCalcCm - startCalcCm);
 
 
       /* Start thread. */
@@ -195,7 +198,7 @@ int main (int argc, char *argv[]) {
     double startCalcAcc = get_wall_seconds();
 
     /* Compute acceleration of particle i based on force from all other particles */
-    for (int i = (n_threads*n_thread_part); i < N; i++) {
+    for (int i = ((n_threads-1)*n_thread_part); i < N; i++) {
       target = &particles[i];
 
       double forceSumX = calc_forcesum(target, root, theta_max, 'x');
@@ -204,6 +207,7 @@ int main (int argc, char *argv[]) {
       xAcc[i] = -(gravConst/N)*forceSumX;
       yAcc[i] = -(gravConst/N)*forceSumY;
     }
+    //printf("particles in main: %d\n",(N+1-(n_threads*n_thread_part-1)));
 
 
     for(int i = 0; i<(n_threads-1);i++){
@@ -211,7 +215,7 @@ int main (int argc, char *argv[]) {
     }
 
     double endCalcAcc = get_wall_seconds();
-    printf("Calculation of acceleration in 2D takes %f wall seconds\n", endCalcAcc - startCalcAcc);
+    //printf("Calculation of acceleration in 2D takes %f wall seconds\n", endCalcAcc - startCalcAcc);
 
     
     double startUpdatePos = get_wall_seconds();
@@ -229,7 +233,7 @@ int main (int argc, char *argv[]) {
       // target->yPos = get_pos_1D(target->yPos, target->yVel, delta_t);
     }
     double endUpdatePos = get_wall_seconds();
-    printf("Updating positions in 2D takes %f wall seconds\n", endUpdatePos - startUpdatePos);
+    //printf("Updating positions in 2D takes %f wall seconds\n", endUpdatePos - startUpdatePos);
 
     if (graphics == 1) {
       /* Call graphics routines. */
